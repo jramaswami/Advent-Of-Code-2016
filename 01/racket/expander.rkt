@@ -12,8 +12,7 @@
   (cond [(equal? d (direction 0 1)) "N"]
         [(equal? d (direction 1 0)) "E"]
         [(equal? d (direction 0 -1)) "S"]
-        [(equal? d (direction -1 0)) "W"]
-        [else "???"]))
+        [(equal? d (direction -1 0)) "W"]))
 
 (define (make-turn env arg)
   (let ([current-position (environment-position env)]
@@ -30,12 +29,6 @@
                (if (equal? arg "L")
                    (direction (* -1 (direction-y current-direction)) 0)
                    (direction (direction-y current-direction) 0)))])
-      (fprintf (current-output-port) "$ Turning ~a from ~a (~a) to ~a (~a)\n"
-               arg
-               (direction->cardinal current-direction)
-               current-direction
-               (direction->cardinal new-direction)
-               new-direction)
       (environment current-position new-direction))))
 
 (define (make-move env arg)
@@ -43,11 +36,6 @@
          [current-direction (environment-direction env)]
          [new-position  (position (+ (position-x current-position) (* (string->number arg) (direction-x current-direction)))
                                  (+ (position-y current-position) (* (string->number arg) (direction-y current-direction))))])
-    (fprintf (current-output-port) "$ Moving ~a ~a from ~a to ~a\n"
-             (direction->cardinal current-direction)
-             arg
-             current-position
-             new-position)
     (environment new-position current-direction)))
 
 (define-macro (ebh-program TURN-OR-MOVE-ARG ...)
