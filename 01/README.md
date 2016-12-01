@@ -1,4 +1,4 @@
-# Day 1: No Time for a Taxicab
+# [Day 1: No Time for a Taxicab][1]
 
 Santa's sleigh uses a very high-precision clock to guide its movements, and the
 clock's oscillator is regulated by stars. Unfortunately, the stars have been
@@ -21,7 +21,7 @@ blocks, ending at a new intersection.
 
 There's no time to follow such ridiculous instructions on foot, though, so you
 take a moment and work out the destination. Given that you can only walk on the
-[street grid of the city][1], how far is the shortest path to the destination?
+[street grid of the city][2], how far is the shortest path to the destination?
 
 For example:
 
@@ -33,6 +33,19 @@ which is 2 blocks away.
 
 *How many blocks away* is Easter Bunny HQ?
 
+Your puzzle answer was 236.
 
+# Part Two
 
-[1]:https://en.wikipedia.org/wiki/Taxicab_geometry
+Then, you notice the instructions continue on the back of the Recruiting
+Document. Easter Bunny HQ is actually at the first location you visit twice.
+
+For example, if your instructions are R8, R4, R4, R8, the first location you
+visit twice is 4 blocks away, due East.
+
+How many blocks away is the first location you visit twice?
+
+Your puzzle answer was 182.
+
+[1]:http://adventofcode.com/2016/day/1
+[2]:https://en.wikipedia.org/wiki/Taxicab_geometry
