@@ -23,13 +23,7 @@
 
 (struct position (x y) #:transparent)
 
-(define KEYPAD-WIDTH 5)
-(define KEYPAD-HEIGHT 5)
-(define KEYPAD '#("" "" "1" "" ""
-                     "" "2" "3" "4" ""
-                     "5" "6" "7" "8" "9"
-                     "" "A" "B" "C" ""
-                     "" "" "D" "" ""))
+(require "keypad.rkt")
 
 (define (position->key pos)
   (let ([index  (+ (* KEYPAD-WIDTH (position-x pos)) (position-y pos))])
