@@ -47,7 +47,7 @@
 ;; #lang declaration in the source file.
 (require racket/match)
 (define (list->keycode ks)
-  (foldl string-append "" (drop-right ks 1)))
+  (foldl string-append "" ks))
 
 (define (up pos)
   (let* ([x (position-x pos)]
@@ -81,17 +81,20 @@
         pos
         new-pos)))
 
-(define (push-button pos keycode)
-  (cons (position->key pos) keycode))
+(define (push-button pos keycode moved?)
+  (if moved?
+      (cons (position->key pos) keycode)
+      keycode))
 
 (define (fold-funcs pp-funcs)
-  (let-values ([(pos1 keycode1) (for/fold ([pos (position 2 0)]
-                                           [keycode '()])
+  (let-values ([(pos1 keycode1 moved1?) (for/fold ([pos (position 2 0)]
+                                           [keycode '()]
+                                           [moved? #f])
                                           ([pp-func (in-list pp-funcs)])
                                   (if (equal? pp-func push-button)
-                                      (values pos (push-button pos keycode))
-                                      (values (apply pp-func (list pos)) keycode)))])
-    (let ([final-keycode (push-button pos1 keycode1)])
+                                      (values pos (push-button pos keycode moved?) #f)
+                                      (values (apply pp-func (list pos)) keycode #t)))])
+    (let ([final-keycode (push-button pos1 keycode1 moved1?)])
       (displayln (list->keycode final-keycode)))))
 
 (module+ test
@@ -116,7 +119,7 @@
   (check-false (out-of-bounds? (position 2 2)))
   (check-false (out-of-bounds? (position 3 3)))
   (check-false (out-of-bounds? (position 4 2)))
-
+  
   (check-equal? (position->key (up (position 0 2))) "1")
   (check-equal? (position->key (right (position 0 2))) "1")
   (check-equal? (position->key (left (position 0 2))) "1")
