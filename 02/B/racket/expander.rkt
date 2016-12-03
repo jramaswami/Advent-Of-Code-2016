@@ -22,6 +22,9 @@
 (provide push)
 
 (struct position (x y) #:transparent)
+
+(define KEYPAD-WIDTH 5)
+(define KEYPAD-HEIGHT 5)
 (define KEYPAD '#("" "" "1" "" ""
                      "" "2" "3" "4" ""
                      "5" "6" "7" "8" "9"
@@ -29,16 +32,16 @@
                      "" "" "D" "" ""))
 
 (define (position->key pos)
-  (let ([index  (+ (* 5 (position-x pos)) (position-y pos))])
+  (let ([index  (+ (* KEYPAD-WIDTH (position-x pos)) (position-y pos))])
     (vector-ref KEYPAD index)))
 
 (define (out-of-bounds? pos)
   (let ([x (position-x pos)]
         [y (position-y pos)])
     (or (< x 0)
-        (> x 4)
+        (>= x KEYPAD-HEIGHT)
         (< y 0)
-        (> y 4)
+        (>= y KEYPAD-WIDTH)
         (equal? (position->key pos) ""))))
 
 ;; Function to turn the list of keypushes into a keycode.
