@@ -25,6 +25,15 @@
 
 (require "keypad.rkt")
 
+(define (key->position key)
+  (let ([limit (* KEYPAD-HEIGHT KEYPAD-WIDTH)])
+    (define (helper0 x)
+      (cond [(= x limit) #f]
+            [(equal? (vector-ref KEYPAD x) key) x]
+            [else (helper0 (add1 x))]))
+    (let ([index  (helper0 0)])
+      (position (quotient index KEYPAD-WIDTH) (remainder index KEYPAD-WIDTH)))))
+
 (define (position->key pos)
   (let ([index  (+ (* KEYPAD-WIDTH (position-x pos)) (position-y pos))])
     (vector-ref KEYPAD index)))
@@ -84,7 +93,7 @@
       keycode))
 
 (define (fold-funcs pp-funcs)
-  (let-values ([(pos1 keycode1 moved1?) (for/fold ([pos (position 2 0)]
+  (let-values ([(pos1 keycode1 moved1?) (for/fold ([pos (key->position START-KEY)]
                                            [keycode '()]
                                            [moved? #f])
                                           ([pp-func (in-list pp-funcs)])

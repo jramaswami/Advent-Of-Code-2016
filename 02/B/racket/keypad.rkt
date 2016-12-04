@@ -7,4 +7,5 @@
                      "5" "6" "7" "8" "9"
                      "" "A" "B" "C" ""
                      "" "" "D" "" ""))
-(provide KEYPAD KEYPAD-WIDTH KEYPAD-HEIGHT)
+(define START-KEY "5")
+(provide KEYPAD KEYPAD-WIDTH KEYPAD-HEIGHT START-KEY)
