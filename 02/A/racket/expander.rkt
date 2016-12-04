@@ -23,8 +23,29 @@
 
 (struct position (x y) #:transparent)
 
-(define (position->number pos)
-  (add1 (+ (* 3 (position-x pos)) (position-y pos))))
+(require "keypad.rkt")
+
+(define (key->position key)
+  (let ([limit (* KEYPAD-HEIGHT KEYPAD-WIDTH)])
+    (define (helper0 x)
+      (cond [(= x limit) #f]
+            [(equal? (vector-ref KEYPAD x) key) x]
+            [else (helper0 (add1 x))]))
+    (let ([index  (helper0 0)])
+      (position (quotient index KEYPAD-WIDTH) (remainder index KEYPAD-WIDTH)))))
+
+(define (position->key pos)
+  (let ([index  (+ (* KEYPAD-WIDTH (position-x pos)) (position-y pos))])
+    (vector-ref KEYPAD index)))
+
+(define (out-of-bounds? pos)
+  (let ([x (position-x pos)]
+        [y (position-y pos)])
+    (or (< x 0)
+        (>= x KEYPAD-HEIGHT)
+        (< y 0)
+        (>= y KEYPAD-WIDTH)
+        (equal? (position->key pos) ""))))
 
 ;; Function to turn the list of keypushes into a keycode.
 ;; Be sure to drop the last number in the list which is the
@@ -32,72 +53,78 @@
 ;; #lang declaration in the source file.
 (require racket/match)
 (define (list->keycode ks)
-  (define (helper0 ks0 m acc)
-    (match ks0
-      [(cons hd '()) acc]
-      [(cons hd tl) (helper0 tl (* 10 m) (+ (* m hd) acc))]))
-  (helper0 ks 1 0))
+  (foldl string-append "" ks))
 
 (define (up pos)
-  (let ([x (position-x pos)]
-        [y (position-y pos)])
-    (if (> x 0)
-        (position (sub1 x) y)
-        pos)))
+  (let* ([x (position-x pos)]
+         [y (position-y pos)]
+         [new-pos (position (sub1 x) y)])
+    (if (out-of-bounds? new-pos)
+        pos
+        new-pos)))
 
 (define (down pos)
-  (let ([x (position-x pos)]
-        [y (position-y pos)])
-    (if (< x 2)
-        (position (add1 x) y)
-        pos)))
+  (let* ([x (position-x pos)]
+         [y (position-y pos)]
+         [new-pos (position (add1 x) y)])
+    (if (out-of-bounds? new-pos)
+        pos
+        new-pos)))
 
 (define (left pos)
-  (let ([x (position-x pos)]
-        [y (position-y pos)])
-    (if (> y 0)
-        (position x (sub1 y))
-        pos)))
+  (let* ([x (position-x pos)]
+         [y (position-y pos)]
+         [new-pos (position x (sub1 y))])
+    (if (out-of-bounds? new-pos)
+        pos
+        new-pos)))
 
 (define (right pos)
-  (let ([x (position-x pos)]
-        [y (position-y pos)])
-    (if (< y 2)
-        (position x (add1 y))
-        pos)))
+  (let* ([x (position-x pos)]
+         [y (position-y pos)]
+         [new-pos (position x (add1 y))])
+    (if (out-of-bounds? new-pos)
+        pos
+        new-pos)))
 
-(define (push-button pos keycode)
-  (cons (position->number pos) keycode))
+(define (push-button pos keycode moved?)
+  (if moved?
+      (cons (position->key pos) keycode)
+      keycode))
 
 (define (fold-funcs pp-funcs)
-  (let-values ([(pos1 keycode1) (for/fold ([pos (position 1 1)]
-                                           [keycode '()])
-                                          ([pp-func (in-list pp-funcs)])
-                                  (if (equal? pp-func push-button)
-                                      (values pos (push-button pos keycode))
-                                      (values (apply pp-func (list pos)) keycode)))])
-    (let ([final-keycode (push-button pos1 keycode1)])
+  (let-values ([(pos1 keycode1 moved1?) (for/fold ([pos (key->position START-KEY)]
+                                                   [keycode '()]
+                                                   [moved? #f])
+                                                  ([pp-func (in-list pp-funcs)])
+                                          (if (equal? pp-func push-button)
+                                              (values pos (push-button pos keycode moved?) #f)
+                                              (values (apply pp-func (list pos)) keycode #t)))])
+    (let ([final-keycode (push-button pos1 keycode1 moved1?)])
       (displayln (list->keycode final-keycode)))))
 
 (module+ test
   (require rackunit)
-  (check-equal? 1 (position->number (position 0 0)))
-  (check-equal? 2 (position->number (position 0 1)))
-  (check-equal? 3 (position->number (position 0 2)))
-  (check-equal? 4 (position->number (position 1 0)))
-  (check-equal? 5 (position->number (position 1 1)))
-  (check-equal? 6 (position->number (position 1 2)))
-  (check-equal? 7 (position->number (position 2 0)))
-  (check-equal? 8 (position->number (position 2 1)))
-  (check-equal? 9 (position->number (position 2 2)))
+  (check-equal? "1" (position->key (position 0 0)))
+  (check-equal? "2" (position->key (position 0 1)))
+  (check-equal? "3" (position->key (position 0 2)))
+  (check-equal? "4" (position->key (position 1 0)))
+  (check-equal? "5" (position->key (position 1 1)))
+  (check-equal? "6" (position->key (position 1 2)))
+  (check-equal? "7" (position->key (position 2 0)))
+  (check-equal? "8" (position->key (position 2 1)))
+  (check-equal? "9" (position->key (position 2 2)))
   
-  (check-equal? 2 (position->number (up (position 1 1))))
-  (check-equal? 8 (position->number (down (position 1 1))))
-  (check-equal? 6 (position->number (right (position 1 1))))
-  (check-equal? 4 (position->number (left (position 1 1))))
+  (check-equal? "2" (position->key (up (position 1 1))))
+  (check-equal? "8" (position->key (down (position 1 1))))
+  (check-equal? "6" (position->key (right (position 1 1))))
+  (check-equal? "4" (position->key (left (position 1 1))))
   
-  (check-equal? 1 (position->number (up (position 0 0))))
-  (check-equal? 1 (position->number (left (position 0 0))))
-  (check-equal? 9 (position->number (down (position 2 2))))
-  (check-equal? 9 (position->number (right (position 2 2))))
+  (check-equal? "1" (position->key (up (position 0 0))))
+  (check-equal? "1" (position->key (left (position 0 0))))
+  (check-equal? "9" (position->key (down (position 2 2))))
+  (check-equal? "9" (position->key (right (position 2 2))))
+
+  (for ([i (range 1 10)])
+    (check-equal? (position->key (key->position (number->string i))) (number->string i)))
   )
