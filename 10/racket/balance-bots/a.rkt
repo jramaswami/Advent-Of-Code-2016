@@ -3,10 +3,11 @@
 (module+ reader
   (provide read-syntax)
   (define (read-syntax path port)
-    (define balance-bot-datums (parse port))
-    (strip-bindings
-     #`(module balance-bots-mod balance-bots/a
-         #,@balance-bot-datums))))
+    (define parse-tree (parse port))
+    (define module-datums `(module balance-bots-mod balance-bots/a
+                             (balance-bot-instructions
+                              ,parse-tree)))
+    (datum->syntax #f module-datums)))
 
 ;; TOKENIZER
 (require parser-tools/lex)
@@ -46,7 +47,21 @@
 
 ;; EXPANDER
 
-(provide #%module-begin)
+(define-macro (bb-module-begin PARSE-TREE)
+  #'(#%module-begin
+     PARSE-TREE))
+(provide (rename-out [bb-module-begin #%module-begin]))
+
+(define-macro (balance-bot-instructions INSTRUCTIONS ...)
+  #'(fold-funcs (list INSTRUCTIONS ...)))
+(provide balance-bot-instructions)
+
+(define (fold-funcs instructions)
+  (for/fold ([env (environment (make-hash) (list 0 0) +inf.0)])
+            ([instruction instructions])
+    (apply instruction (list env))))
+
+
 (provide #%datum)
 (provide #%app)
 (provide #%top-interaction)
@@ -60,19 +75,20 @@
   #'((curry do-value) V B))
 
 (define-macro (give ID B L H)
-  #`(define (ID env)
-      (let* ([bot-slots (environment-bot-slots env)]
-             [giving-slots (hash-ref bot-slots B)]
-             [lo (first giving-slots)]
-             [hi (second giving-slots)]
-             [comparison (environment-comparison env)]
-             [prev-comparing-bot (environment-comparing-bot env)]
-             [new-comparing-bot (if (equal? comparison giving-slots)
-                                    B
-                                    prev-comparing-bot)]
-             [new-bot-slots (hash-set! bot-slots B (list 0 0))]
-             [new-env (environment new-bot-slots comparison new-comparing-bot)])
-        (do-value hi H (do-value lo L (new-env))))))
+  #`(begin
+      (define (ID env)
+        (let* ([bot-slots (environment-bot-slots env)]
+               [giving-slots (hash-ref bot-slots B)]
+               [lo (first giving-slots)]
+               [hi (second giving-slots)]
+               [comparison (environment-comparison env)]
+               [prev-comparing-bot (environment-comparing-bot env)]
+               [new-comparing-bot (if (equal? comparison giving-slots)
+                                      B
+                                      prev-comparing-bot)]
+               [new-bot-slots (hash-set! bot-slots B (list 0 0))]
+               [new-env (environment new-bot-slots comparison new-comparing-bot)])
+          (do-value hi H (do-value lo L (new-env)))))))
 
 (provide compare value give)
 
@@ -95,6 +111,6 @@
          [new-slots (add-to-slot slots v)])
     (begin
       (hash-set! bot-slots b new-slots)
-      (if (foldl (λ (x y) (and x y)) #t (map (λ (x) (> x 0)) slots))
+      (if (and (> b 0) (foldl (λ (x y) (and x y)) #t (map (λ (x) (> x 0)) slots)))
           ((eval (string->symbol (format "bot~a" b))) (environment bot-slots comparison comparing-bot))
           (environment bot-slots comparison comparing-bot)))))
