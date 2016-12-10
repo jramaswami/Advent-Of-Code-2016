@@ -9,14 +9,16 @@
   (strip-bindings
    #`(module datalink-mod "expander.rkt"
        (datalink-instr
-       #,@datalink-datums))))
+        #,@datalink-datums))))
 (provide read-syntax)
 
 (define (parse port)
   (define (helper0 acc)
     (let ([token (next-token port)])
       (if (eof-object? token)
-          (reverse acc)
+          (begin
+            ;(fprintf (current-output-port) "# ~a\n" (flatten (reverse acc)))
+            (reverse acc))
           (helper0 (cons token acc)))))
   (helper0 '()))
 
@@ -32,8 +34,7 @@
                         (file-position port (add1 (file-position port)))
                         ;; Grab the string to be expanded.
                         (parse (open-input-string (expandee-lexer port len ""))))])
-            (fprintf (current-output-port) "@ ~a" str)
-            `(expand ,rep ,str))]
+            (cons 'expand (cons rep str)))]
      [any-char (next-token port)]))
   (lxr port))
 
@@ -52,3 +53,8 @@
               [(~ whitespace) (expandee-lexer port (sub1 len) (string-append acc lexeme))]
               [(+ whitespace) (expandee-lexer port len acc)])])
         (lxr port))))
+
+(define (flatten-once lst)
+  (apply append
+         (map (lambda (e) (if (cons? e) e (list e)))
+              lst)))

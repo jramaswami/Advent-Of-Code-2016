@@ -2,7 +2,7 @@
 
 (define-macro (datalink-module-begin PARSE-TREE)
   #'(#%module-begin
-     'PARSE-TREE))
+     PARSE-TREE))
 (provide (rename-out [datalink-module-begin #%module-begin]))
 
 (define-macro (datalink-instr DL-INSTR ...)
