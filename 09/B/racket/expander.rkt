@@ -16,6 +16,6 @@
   (string-length s))
 (provide shift)
 
-(define (expand rep n)
-  (* rep n))
+(define (expand rep . args)
+  (apply + (map (λ (x) (* rep x)) args)))
 (provide expand)
