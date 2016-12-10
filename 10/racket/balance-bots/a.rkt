@@ -6,8 +6,7 @@
     (define balance-bot-datums (parse port))
     (strip-bindings
      #`(module balance-bots-mod balance-bots/a
-         (balance-bots-instructions
-          #,@balance-bot-datums)))))
+         #,@balance-bot-datums))))
 
 ;; TOKENIZER
 (require parser-tools/lex)
@@ -24,7 +23,8 @@
     (lexer
      [(eof) eof]
      ["value" `(value ,(number-tokenizer port) ,(bot-tokenizer port))]
-     ["bot" `(give ,(number-tokenizer port) ,(bot-tokenizer port) ,(bot-tokenizer port))]
+     ["bot" (let ([bot-number (number-tokenizer port)])
+              `(give ,(string->symbol (format "bot~a" bot-number)) ,bot-number ,(bot-tokenizer port) ,(bot-tokenizer port)))]
      ["compare" `(compare ,(number-tokenizer port) ,(number-tokenizer port))]
      [any-char (next-token port)]))
   (lxr port))
@@ -45,36 +45,35 @@
   (lxr port))
 
 ;; EXPANDER
-(define-macro (balance-bots-module-begin PARSE-TREE)
-  #'(#%module-begin
-     PARSE-TREE))
-(provide (rename-out [balance-bots-module-begin #%module-begin]))
 
+(provide #%module-begin)
 (provide #%datum)
 (provide #%app)
 (provide #%top-interaction)
 
-(define-macro (balance-bots-instructions INSTRUCTIONS ...)
-  #'(fold-funcs (list INSTRUCTIONS ...)))
-(provide balance-bots-instructions)
-
-(define (fold-funcs instructions)
-  (let ([final-env (for/fold ([env (environment (make-hash) (list 0 0) +inf.0)])
-                    ([i instructions])
-                     (apply i (list env)))])
-    (fprintf (current-output-port) "The bot that compared ~a was bot ~a.\n"
-             (environment-comparison final-env)
-             (environment-comparing-bot final-env))))
-
 (require racket/function)
+
 (define-macro (compare A B)
   #'((curry do-compare) A B))
 
 (define-macro (value V B)
   #'((curry do-value) V B))
 
-(define-macro (give B L H)
-  #'((curry do-give) B L H))
+(define-macro (give ID B L H)
+  #`(define (ID env)
+      (let* ([bot-slots (environment-bot-slots env)]
+             [giving-slots (hash-ref bot-slots B)]
+             [lo (first giving-slots)]
+             [hi (second giving-slots)]
+             [comparison (environment-comparison env)]
+             [prev-comparing-bot (environment-comparing-bot env)]
+             [new-comparing-bot (if (equal? comparison giving-slots)
+                                    B
+                                    prev-comparing-bot)]
+             [new-bot-slots (hash-set! bot-slots B (list 0 0))]
+             [new-env (environment new-bot-slots comparison new-comparing-bot)])
+        (do-value hi H (do-value lo L (new-env))))))
+
 (provide compare value give)
 
 ;; PROGRAM LOGIC
@@ -92,27 +91,10 @@
   (let* ([bot-slots (environment-bot-slots env)]
          [comparison (environment-comparison env)]
          [comparing-bot (environment-comparing-bot env)]
-         [slot (hash-ref bot-slots b (list 0 0))])
+         [slots (hash-ref bot-slots b (list 0 0))]
+         [new-slots (add-to-slot slots v)])
     (begin
-      (hash-set! bot-slots b (add-to-slot slot v))
-      (environment bot-slots comparison comparing-bot))))
-
-(define (do-give b l h env)
-  (let* ([bot-slots (environment-bot-slots env)]
-         [compare (environment-comparison env)]
-         [comparing-bot (environment-comparing-bot env)]
-         [giving-slot (hash-ref bot-slots b)]
-         [lo-slot (hash-ref bot-slots l (list 0 0))]
-         [hi-slot (hash-ref bot-slots h (list 0 0))]
-         [lo-value (first giving-slot)]
-         [hi-value (second giving-slot)]
-         [new-comparing-bot (if (equal? compare giving-slot)
-                                b
-                                comparing-bot)])
-    (begin
-      (fprintf (current-output-port) "$ ~a :: ~a ~a\n" compare b giving-slot)
-      (hash-set! bot-slots l (add-to-slot lo-slot lo-value))
-      (hash-set! bot-slots h (add-to-slot hi-slot hi-value))
-      (environment bot-slots
-                   compare
-                   new-comparing-bot))))
+      (hash-set! bot-slots b new-slots)
+      (if (foldl (λ (x y) (and x y)) #t (map (λ (x) (> x 0)) slots))
+          ((eval (string->symbol (format "bot~a" b))) (environment bot-slots comparison comparing-bot))
+          (environment bot-slots comparison comparing-bot)))))
