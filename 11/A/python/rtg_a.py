@@ -36,132 +36,108 @@ def is_chip(elem):
     """
     Returns True if elem is chip.
     """
-    return elem % 2 == 0
+    return elem % 2 == 0 and elem > 0
 
 
-def floor_has_matching_generator(chip, floor):
+def chip_and_generator_together(chip, building):
     """
     Returns true if the floor has the
     matching generator for the given chip.
     """
     matching_generator = chip - 1
-    return matching_generator in floor
+    return building[matching_generator] == building[chip]
 
 
-def floor_has_generators(floor):
+def floor_has_generators(floor, building):
     """
     Returns True if the given floor has generators on it.
     All generators are odd numbered, if there are any
     odd numbers in floor then there are generators
     on the floor.
     """
-    return len([x for x in floor if x % 2 == 1]) > 0
+    for elem, loc in enumerate(building):
+        if loc == floor and is_generator(elem):
+            return True
 
 
-def floor_is_valid(floor):
+def building_is_valid(building):
     """
-    Returns True if floor is in a valid state.  This
+    Returns True if building is a valid one.  This
     means that if there are generators, each chip on
     the floor has its corresponding generator.
     """
-    if floor_has_generators(floor):
-        for elem in floor:
-            if is_chip(elem):
-                if not floor_has_matching_generator(elem, floor):
-                    return False
+    # for each chip (even numbers)
+    for chip in range(2, len(building), 2):
+        loc = building[chip]
+        if floor_has_generators(loc, building) \
+        and not chip_and_generator_together(chip, building):
+            return False
     return True
 
 
-def move_to(elems, floor):
+def move_to(elems, floor, building):
     """
     Move elements to given floor,
     returning a new floor.
     """
-    new_floor = list(floor)
-    return sorted(new_floor + elems)
-
-
-def move_from(elems, floor):
-    """
-    Move elements from given floor,
-    returning a new floor.
-    """
-    new_floor = list(floor)
+    new_building = list(building)
     for elem in elems:
-        new_floor.remove(elem)
-    return sorted(new_floor)
+        new_building[elem] = floor
+    # move elevator too!
+    new_building[0] = floor
+    return tuple(new_building)
 
 
-def next_buildings_generator(building, elevator, steps):
+def buildings_generator(building):
     """
-    Generate possible next building states.
+    Generate possible next building buildings.
     """
-    floor = building[elevator]
+    floor = building[0]
+    elems = [e for e, loc in enumerate(building) if e > 0 and loc == floor]
 
-    choose1_it = combinations(floor, 1)
-    choose2_it = combinations(floor, 2)
-    for move in chain(choose1_it, choose2_it):
-        move = list(move)
-        if elevator > 0:
+    choose1_it = combinations(elems, 1)
+    choose2_it = combinations(elems, 2)
+    for movers in chain(choose1_it, choose2_it):
+        if floor > 0:
             # move them down one floor
-            new_floor = move_from(move, floor)
-            new_down = move_to(move, building[elevator - 1])
-            if floor_is_valid(new_floor) and floor_is_valid(new_down):
-                new_building = list(building)
-                new_building[elevator] = new_floor
-                new_building[elevator - 1] = new_down
-                yield (new_building, elevator - 1, steps + 1)
-        if elevator < 3:
+            new_building = move_to(movers, floor - 1, building)
+            if building_is_valid(new_building):
+                yield new_building
+        if floor < 3:
             # move them up one floor
-            new_floor = move_from(move, floor)
-            new_up = move_to(move, building[elevator + 1])
-            if floor_is_valid(new_floor) and floor_is_valid(new_up):
-                new_building = list(building)
-                new_building[elevator] = new_floor
-                new_building[elevator + 1] = new_up
-                yield (new_building, elevator + 1, steps + 1)
+            new_building = move_to(movers, floor + 1, building)
+            if building_is_valid(new_building):
+                yield new_building
 
 
-def mark(building, elevator, marked):
+def bfs(init_building, desired_building):
     """
-    Marks the given building/elevator combination.
-    """
-    marked["E" + str(elevator) + str(building)] = True
-
-
-def is_marked(building, elevator, marked):
-    """
-    Returns true if the building/elevator combination
-    has been marked.
-    """
-    return "E" + str(elevator) + str(building) in marked
-
-
-def bfs(init_building, init_elevator, desired_building):
-    """
-    Perform bfs of game states to find the number
+    Perform bfs of game buildings to find the number
     of steps required to get to desired building.
     """
     marked = {}
     queue = deque()
 
     # init queue
-    for new_building, new_elevator, new_steps in \
-            next_buildings_generator(init_building, init_elevator, 0):
-        mark(new_building, new_elevator, marked)
-        queue.append((new_building, new_elevator, new_steps))
+    for new_building in buildings_generator(init_building):
+        marked[new_building] = True
+        queue.append((new_building, 1))
 
+    prev_step = 0
     while queue:
-        building, elevator, steps = queue.popleft()
-        for new_building, new_elevator, new_steps in \
-                next_buildings_generator(building, elevator, steps):
+        building, steps = queue.popleft()
 
-            if not is_marked(new_building, new_elevator, marked):
+        if steps != prev_step:
+            print("step", steps, "...")
+            prev_step = steps
+
+        for new_building in buildings_generator(building):
+            if new_building not in marked:
                 if new_building == desired_building:
-                    return new_steps
+                    return steps + 1
                 else:
-                    mark(new_building, new_elevator, marked)
-                    queue.append((new_building, new_elevator, new_steps))
+                    marked[new_building] = True
+                    queue.append((new_building, steps + 1))
 
 
 def main():
@@ -169,21 +145,13 @@ def main():
     Main program.
     """
     # Test
-    # desired_building = [[], [], [], [HG, HM, LG, LM]]
-    # init_building = [[HM, LM], [HG, ], [LG, ], []]
+    # desired_building = (3, 3, 3, 3, 3)
+    # init_building = (0, 1, 0, 2, 0)
+    desired_building = (3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3)
+    init_building = (0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0)
 
-    # Puzzle
-    desired_building = [[],
-                        [],
-                        [],
-                        [POG, POM, THG, THM, PRG, PRM, RUG, RUM, COG, COM]]
-    init_building = [[POG, THG, THM, PRG, RUG, RUM, COG, COM],
-                     [POM, PRM],
-                     [],
-                     []]
-
-    init_elevator = 0
-    steps = bfs(init_building, init_elevator, desired_building)
+    steps = bfs(init_building, desired_building)
+    print()
     print(steps)
 
 
