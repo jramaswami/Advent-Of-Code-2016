@@ -4,25 +4,59 @@ Day 11 Puzzle, Part A
 """
 
 from itertools import combinations, chain
-from collections import deque
+import heapq
 
-# Test Elements
-HG = 1
-HM = 2
-LG = 3
-LM = 4
 
-# Puzzle Elements
-POG = 1
-POM = 2
-THG = 3
-THM = 4
-PRG = 5
-PRM = 6
-RUG = 7
-RUM = 8
-COG = 9
-COM = 10
+REMOVED = (-1, -1, -1, -1)
+
+
+class PriorityQueue(object):
+    """
+    Implementation of priority queue using heapq.
+    """
+
+    def __init__(self):
+        self._pq = []
+        self._entry_finder = {}
+
+    def push(self, building, steps):
+        """
+        Push building with given number of steps onto the queue,
+        unless it is already in the queue.
+        """
+        # If building is in queue, update number of steps if necessary
+        # (priority will not change, but steps will)
+        if building in self._entry_finder:
+            _, prev_steps, _ = self._entry_finder[building]
+            if steps < prev_steps:
+                self._entry_finder[building][-1] = REMOVED
+            else:
+                # Ignore the new entry because it has more steps
+                # than the current one.
+                return
+
+        priority = sum([(3 - e) for e in building[1:]])
+        entry = [priority, steps, building]
+        self._entry_finder[building] = entry
+        heapq.heappush(self._pq, entry)
+
+    def pop(self):
+        """
+        Pop the next priority building off the queue.
+        """
+        while self._pq:
+            _, steps, building = heapq.heappop(self._pq)
+            if building is not REMOVED:
+                del self._entry_finder[building]
+                return building, steps
+
+        raise KeyError('pop from an empty queue')
+
+    def empty(self):
+        """
+        Returns True if queue is empty.
+        """
+        return len(self._pq) == 0
 
 
 def is_generator(elem):
@@ -110,34 +144,32 @@ def buildings_generator(building):
                 yield new_building
 
 
-def bfs(init_building, desired_building):
+def a_star(init_building, desired_building):
     """
-    Perform bfs of game buildings to find the number
+    Perform A* of game buildings to find the number
     of steps required to get to desired building.
     """
+    queue = PriorityQueue()
     marked = {}
-    queue = deque()
 
     # init queue
     for new_building in buildings_generator(init_building):
-        marked[new_building] = True
-        queue.append((new_building, 1))
+        marked[new_building] = 1
+        queue.push(new_building, 1)
 
-    prev_step = 0
-    while queue:
-        building, steps = queue.popleft()
-
-        if steps != prev_step:
-            print("step", steps, "...")
-            prev_step = steps
-
-        for new_building in buildings_generator(building):
-            if new_building not in marked:
-                if new_building == desired_building:
-                    return steps + 1
-                else:
-                    marked[new_building] = True
-                    queue.append((new_building, steps + 1))
+    best_steps = float("inf")
+    while not queue.empty():
+        building, steps = queue.pop()
+        if steps < best_steps:
+            for new_building in buildings_generator(building):
+                if new_building not in marked \
+                or steps + 1 < marked[new_building]:
+                    if new_building == desired_building:
+                        return steps + 1
+                    else:
+                        marked[building] = steps + 1
+                        queue.push(new_building, steps + 1)
+    return best_steps
 
 
 def main():
@@ -150,10 +182,9 @@ def main():
     desired_building = (3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3)
     init_building = (0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0)
 
-    steps = bfs(init_building, desired_building)
+    steps = a_star(init_building, desired_building)
     print()
     print(steps)
-
 
 if __name__ == '__main__':
     main()
