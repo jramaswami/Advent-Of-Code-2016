@@ -4,6 +4,7 @@ Day 11 Puzzle, Part A
 """
 
 from itertools import combinations, chain
+from collections import deque
 import heapq
 
 
@@ -172,6 +173,35 @@ def a_star(init_building, desired_building):
     return best_steps
 
 
+def bfs(init_building, desired_building):
+    """
+    Perform bfs of game buildings to find the number
+    of steps required to get to desired building.
+    """
+    marked = {}
+    queue = deque()
+
+    # init queue
+    for new_building in buildings_generator(init_building):
+        marked[new_building] = True
+        queue.append((new_building, 1))
+
+    prev_step = 0
+    while queue:
+        building, steps = queue.popleft()
+
+        if steps != prev_step:
+            print("step", steps, "...")
+            prev_step = steps
+
+        for new_building in buildings_generator(building):
+            if new_building not in marked:
+                if new_building == desired_building:
+                    return steps + 1
+                else:
+                    marked[new_building] = True
+                    queue.append((new_building, steps + 1))
+
 def main():
     """
     Main program.
@@ -182,7 +212,7 @@ def main():
     desired_building = (3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3)
     init_building = (0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0)
 
-    steps = a_star(init_building, desired_building)
+    steps = bfs(init_building, desired_building)
     print()
     print(steps)
 
