@@ -1,4 +1,4 @@
-#lang reader "reader.rkt"
+#lang assembunny
 cpy 41 a
 inc a
 inc a
