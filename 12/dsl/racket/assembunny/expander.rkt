@@ -10,7 +10,7 @@
 (require racket/function)
 (define-macro (assembunny-program INSTRUCTIONS ...)
   #'(begin
-      (run-program (list->vector (list INSTRUCTIONS ...)))))
+      (void (run-program (list->vector (list INSTRUCTIONS ...))))))
 
 (define-macro (copy-val #f VAL REG)
   #'((curry do-copy-val) VAL REG))
@@ -79,7 +79,12 @@
   (define registers (make-vector 5 0))
   (define (apply-instruction ptr)
     (if (or (< ptr (vector-ref registers 4)) (>= ptr instruction-count))
-        registers
+        (let ([register-names '#(#\a #\b #\c #\d)])
+          (for ([i (range 4)])
+            (fprintf (current-output-port)
+                     "Register ~a: ~a\n"
+                     (vector-ref register-names i)
+                     (vector-ref registers i))))
         (let ([instruction (vector-ref instruction-set ptr)])
           (apply-instruction (+ ptr (apply instruction (list registers)))))))
   (apply-instruction 0))

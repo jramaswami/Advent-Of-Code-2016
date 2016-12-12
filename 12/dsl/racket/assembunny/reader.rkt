@@ -3,7 +3,7 @@
 
 (define (read-syntax path port)
   (define parse-tree (parse path (tokenize port)))
-  (define module-datum `(module assembunny-mod "expander.rkt"
+  (define module-datum `(module assembunny-mod assembunny/expander
                           ,parse-tree))
   (datum->syntax #f module-datum)) 
 (provide read-syntax)
