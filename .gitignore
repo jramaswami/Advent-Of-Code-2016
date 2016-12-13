@@ -1,0 +1,6 @@
+# ignore compiled folder for racket
+compiled
+# ingore compiled folder for python
+__pycache__
+
+.DS_Store
