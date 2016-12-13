@@ -1,2 +1,2 @@
 #lang reader "reader.rkt"
-ADVENT
+A(2x2)BCD(2x2)EFG

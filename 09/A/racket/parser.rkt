@@ -2,6 +2,6 @@
 
 datalink-expansion : (shift | expand)+
 shift              : SHIFT-TOKEN
-expand             : EXPANSION-TOKEN NUMBER-TOKEN NUMBER-TOKEN
+expand             : EXPANSION-TOKEN NUMBER-TOKEN
 
 

@@ -1,2 +1,2 @@
 #lang reader "reader.rkt"
-ADVENT
+(6x1)(1x3)A
