@@ -1,6 +1,6 @@
 """
 Advent of Code 2016
-Day 13, Part A
+Day 13, Part B
 """
 
 # allow one letter variable names
@@ -63,10 +63,9 @@ def is_in_bounds(x, y):
     return x >= 0 and y >= 0
 
 
-def bfs(target_x, target_y, fav):
+def bfs(max_steps, fav):
     """
-    Do a bfs to find the shortest route to
-    given x y position.
+    Do bfs to find all unique
     """
     queue = deque()
     marked = {}
@@ -75,26 +74,24 @@ def bfs(target_x, target_y, fav):
     marked[(start_x, start_y)] = True
     while queue:
         x, y, steps = queue.popleft()
-        if (x, y) == (target_x, target_y):
-            return steps
-
-        #           N       E       S        W
-        moves = ((0, -1), (0, 1), (1, 0), (-1, 0))
-        for move_x, move_y in moves:
-            new_x = x + move_x
-            new_y = y + move_y
-            if (new_x, new_y) not in marked and is_open(new_x, new_y, fav):
-                marked[(new_x, new_y)] = True
-                queue.append((new_x, new_y, steps + 1))
+        if steps < max_steps:
+            #           N       E       S        W
+            moves = ((0, -1), (0, 1), (1, 0), (-1, 0))
+            for move_x, move_y in moves:
+                new_x = x + move_x
+                new_y = y + move_y
+                if (new_x, new_y) not in marked and is_open(new_x, new_y, fav):
+                    marked[(new_x, new_y)] = True
+                    queue.append((new_x, new_y, steps + 1))
+    return len(marked.keys())
 
 
 def main():
     """
     Main program.
     """
-    # x, y, fav = 7, 4, 10
-    x, y, fav = 31, 39, 1358
-    result = bfs(x, y, fav)
+    fav = 1358
+    result = bfs(50, fav)
     print(result)
 
 
