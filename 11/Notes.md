@@ -6,10 +6,19 @@ out any possible game states that are invalid as per the rules.  This allows
 for a quick solution to Part A.  Part B, however, took quite a long time to
 produce a solution.
 
-The key to a faster solution is to prune the possible game states.  In the
-[solution thread][2], I saw a [suggestion][3] that the generator/microchip pairs
-are interchangeable.  If I can figure out how to classify a the game state
-using this hint, I'm sure that the solution will be faster.
+I tried to implement an A\* search algorithm but it failed.  I'm not really
+sure how to score the priority of each possible game state.
+
+So, instead I focused on making the BFS faster.  The key to a faster solution
+is to prune the possible game states.  In the [solution thread][2], I saw a
+[suggestion][3] that the generator/microchip pairs are interchangeable. To
+that end, I implemented a classification scheme to classify each building
+according to the locations of generator/microchip pairs rather than 
+by the location of each generator and microchip.  Without this crucial
+pruning step, it took quite a while to come up with a solution to Part B;
+on the order of start the solution, get up, brew tea, let the dogs out,
+and come back to see what the solution was.  With the classification scheme,
+it takes less than 10 seconds to solve Part B.  Quite a speed up!
 
 For possible future investigations, the creator of Advent of Code stated
 that this puzzle is based in the [Missionaries and Cannibals Problem][1].

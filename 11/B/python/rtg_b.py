@@ -92,6 +92,19 @@ def buildings_generator(building):
                 yield new_building
 
 
+def classify_building(building):
+    """
+    The generator/microchip pairs are interchangeable.
+    Given a generator on floor x and its corresponding
+    microchip on floor y, it doesn't matter which pair
+    are on x and y.  This function will classify the
+    buildings by sorting the pairs.
+    """
+    return tuple([building[0], ] +
+                 sorted([(building[i], building[i+1])
+                         for i in range(1, len(building), 2)]))
+
+
 def bfs(init_building, desired_building):
     """
     Perform bfs of game buildings to find the number
@@ -102,7 +115,8 @@ def bfs(init_building, desired_building):
 
     # init queue
     for new_building in buildings_generator(init_building):
-        marked[new_building] = True
+        new_building_classification = classify_building(new_building)
+        marked[new_building_classification] = True
         queue.append((new_building, 1))
 
     prev_step = 0
@@ -114,11 +128,12 @@ def bfs(init_building, desired_building):
             prev_step = steps
 
         for new_building in buildings_generator(building):
-            if new_building not in marked:
+            new_building_classification = classify_building(new_building)
+            if new_building_classification not in marked:
                 if new_building == desired_building:
                     return steps + 1
                 else:
-                    marked[new_building] = True
+                    marked[new_building_classification] = True
                     queue.append((new_building, steps + 1))
 
 
