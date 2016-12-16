@@ -1,73 +1,72 @@
 #lang racket
 
-(define (flip-bits n)
-    (let ([mask (- (arithmetic-shift 1 (integer-length n)) 1)])
-      (bitwise-xor n mask)))
+(require data/bit-vector)
 
-(define (reverse-bits n)
-  (define (helper0 m x)
-    (if (= m 0)
-        x
-        (let ([x0 (arithmetic-shift x 1)]
-              [m0 (bitwise-and m 1)])
-          (helper0 (arithmetic-shift m -1) (bitwise-ior x0 m0)))))
-  (helper0 n 0))
+(define (reverse-not xs)
+  (define (helper0 xs0 acc)
+    (cond [(empty? xs0) acc]
+          [(= (car xs0) 1) (helper0 (cdr xs0) (cons 0 acc))]
+          [else (helper0 (cdr xs0) (cons 1 acc))]))
+  (helper0 xs '()))
 
-(define (reverse-not n)
-  (define (helper0 m x)
-    (if (= m 0)
-        x
-        (let ([x0 (arithmetic-shift x 1)]
-              [m0 (bitwise-and m 1)])
-          (if (= m0 0)
-              (helper0 (arithmetic-shift m -1) (bitwise-ior x0 1))
-              (helper0 (arithmetic-shift m -1) (bitwise-ior x0 0))))))
-  (helper0 n 0))
+(define (dragon-curve v)
+  (let* ([l (bit-vector-length v)]
+         [l0 (add1 (* 2 l))]
+         [v0 (make-bit-vector l0)])
+    (for ([i (range l)])
+      (let ([t (bit-vector-ref v i)])
+        (bit-vector-set! v0 i t)
+        (bit-vector-set! v0 (- l0 1 i) (not t))))
+    v0))
 
-(define (dragon-curve xs)
-  (append xs '(0) (reverse-not xs)))
-
-(define (checksum xs)
-  (define (helper0 xs0)
-    (if (empty? xs0)
-        '()
-    (let ([a (first xs0)]
-          [b (second xs0)])
-      (if (equal? a b)
-          (cons 1 (helper0 (drop xs0 2)))
-          (cons 0 (helper0 (drop xs0 2)))))))
-  (let ([cs (helper0 xs)])
-    (if (odd? (length cs))
-        cs
-        (checksum cs))))
+(define (checksum v)
+  (let ([l (bit-vector-length v)])
+    (if (odd? l)
+        v
+        (let* ([l0 (/ l 2)]
+               [v0 (make-bit-vector l0)])
+          (for ([i (range l0)])
+            (let* ([j (* 2 i)]
+                   [k (add1 j)])
+              (if (equal? (bit-vector-ref v j) (bit-vector-ref v k))
+                  (bit-vector-set! v0 i #t)
+                  (bit-vector-set! v0 i #f))))
+          (checksum v0)))))
 
 (define (fill-disk data len)
-  (if (<= len (length data))
-      (take data len)
-      (fill-disk (dragon-curve data) len)))
+  (cond [(= len (bit-vector-length data)) data]
+        [(< len (bit-vector-length data))
+         (let ([v0 (make-bit-vector len)])
+           (for ([i (range len)])
+             (bit-vector-set! v0 i (bit-vector-ref data i)))
+           v0)]
+        [else (fill-disk (dragon-curve data) len)]))
 
-;(module+ test1
-;  (require rackunit)
-;
-;  (check-equal? (dragon-curve '(1)) '(1 0 0))
-;  (check-equal? (dragon-curve '(0)) '(0 0 1))
-;  (check-equal? (dragon-curve (bitstring->bitlist "11111"))
-;                (bitstring->bitlist "11111000000"))
-;  (check-equal? (dragon-curve (bitstring->bitlist "111100001010"))
-;                (bitstring->bitlist "1111000010100101011110000"))
-;
-;  (check-equal? (checksum (bitstring->bitlist "110010110100"))
-;                (bitstring->bitlist "100"))
-;
-;  (check-equal? (fill-disk (bitstring->bitlist "10000") 20)
-;                (bitstring->bitlist "10000011110010000111"))
-;
-;  (check-equal? (checksum (fill-disk (bitstring->bitlist "10000") 20))
-;                (bitstring->bitlist "01100")))
-;
-;(module+ main1
-;  (define init (string-trim (read-line)))
-;  (define len (read))
-;  (displayln
-;   (bitlist->bitstring
-;    (checksum (fill-disk (bitstring->bitlist init) len)))))
+(module+ test
+  (require rackunit)
+  
+  (check-equal? (dragon-curve (string->bit-vector "1"))
+                (string->bit-vector "100"))
+  (check-equal? (dragon-curve (string->bit-vector "0"))
+                (string->bit-vector "001"))
+  (check-equal? (dragon-curve (string->bit-vector "11111"))
+                (string->bit-vector "11111000000"))
+  (check-equal? (dragon-curve (string->bit-vector "111100001010"))
+                (string->bit-vector "1111000010100101011110000"))
+  
+  (check-equal? (checksum (string->bit-vector "110010110100"))
+                (string->bit-vector "100"))
+  
+  (check-equal? (fill-disk (string->bit-vector "10000") 20)
+                (string->bit-vector "10000011110010000111"))
+  
+  (check-equal? (checksum (fill-disk (string->bit-vector "10000") 20))
+                (string->bit-vector "01100"))
+  )
+
+(module+ main
+  (define init (string-trim (read-line)))
+  (define len (read))
+  (displayln
+   (bit-vector->string
+    (checksum (fill-disk (string->bit-vector init) len)))))
