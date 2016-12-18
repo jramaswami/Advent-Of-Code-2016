@@ -8,6 +8,9 @@ from collections import namedtuple
 
 Pos = namedtuple('Pos', ['row', 'col'])
 
+SAFE = True
+TRAP = False
+
 
 def is_safe(pos, tiles):
     """
@@ -45,6 +48,37 @@ def add_rows(num, tiles):
     return tiles
 
 
+def rows_generator(num, init):
+    """
+    Generator for rows.
+    """
+    yield init
+    prev_row = init
+    for _ in range(1, num):
+        next_row = []
+        for index in range(len(prev_row)):
+            if index == 0:
+                left = SAFE
+            else:
+                left = prev_row[index - 1]
+            center = prev_row[index]
+            if index == len(prev_row) - 1:
+                right = SAFE
+            else:
+                right = prev_row[index + 1]
+
+            current = not ((left and center and not right) or
+                           (center and right and not left) or
+                           (not center and not right and left) or
+                           (not center and not left and right))
+
+            next_row.append(current)
+
+        prev_row = next_row
+        yield next_row
+    return
+
+
 def tiles_to_string(tiles):
     """
     Returns string representation
@@ -78,11 +112,24 @@ def string_to_tiles(tile_str):
     return tiles
 
 
-def count_safe_tiles(tiles):
+def string_to_row(row_str):
+    """
+    Convert string to row of tiles.
+    """
+    row = []
+    for char in row_str.strip():
+        if char == ".":
+            row.append(True)
+        else:
+            row.append(False)
+    return row
+
+
+def count_safe_tiles(num_rows, init_row):
     """
     Returns the number of safe tiles.
     """
-    return sum([sum(row) for row in tiles])
+    return sum([sum(row) for row in rows_generator(num_rows, init_row)])
 
 
 def main():
@@ -90,14 +137,13 @@ def main():
     Main program.
     """
     import sys
-    inp = sys.stdin.read()
+    inp = sys.stdin.readline()
     if len(sys.argv) > 1:
-        rows = int(sys.argv[1])
+        num_rows = int(sys.argv[1])
     else:
-        rows = 40
-    tiles = string_to_tiles(inp)
-    tiles = add_rows(rows - len(tiles), string_to_tiles(inp))
-    print(count_safe_tiles(tiles))
+        num_rows = 40
+    init_row = string_to_row(inp)
+    print(count_safe_tiles(num_rows, init_row))
 
 
 if __name__ == '__main__':
