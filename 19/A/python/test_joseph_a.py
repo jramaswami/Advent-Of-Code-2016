@@ -3,7 +3,7 @@ Tests for joseph_a.py
 """
 
 import unittest
-from joseph_a import white_elephant_party
+from joseph_a import josephus_circle
 
 
 class TestJosephA(unittest.TestCase):
@@ -11,12 +11,12 @@ class TestJosephA(unittest.TestCase):
     Tests for joseph_a.py
     """
 
-    def test_white_elephant_party(self):
+    def test_josephus_circle(self):
         """
-        Tests for white_elephant_party
+        Tests for josephus_circle
         """
-        winner = white_elephant_party(5)
-        self.assertEqual(winner.id, 3)
+        self.assertEqual(josephus_circle(5), 3)
+        self.assertEqual(josephus_circle(3001330), 1808357)
 
 
 if __name__ == '__main__':

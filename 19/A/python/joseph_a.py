@@ -3,36 +3,35 @@ Advent of Code 2016
 Day 19, Part A
 An Elephant Named Joseph
 """
-
-from collections import deque, namedtuple
-
-Elf = namedtuple('Elf', ['id', 'presents'])
+# pylint: disable=invalid-name
 
 
-def white_elephant_party(elf_count):
+def josephus_circle(n):
     """
-    Returns the "winner" of the elves
-    white elephant party.  Uses simulation
-    to determine "winner."
-    """
-    queue = deque()
-    for index in range(1, elf_count + 1):
-        queue.append(Elf(index, 1))
-    while len(queue) > 1:
-        left_elf = queue.popleft()
-        right_elf = queue.popleft()
-        queue.append(Elf(left_elf.id, right_elf.presents + left_elf.presents))
+    Returns the "winner" of the josephus circle. Uses
+    the following math to determine "winner":
 
-    return queue.pop()
+    where j(n) = j(2^x + m) = 2m + 1
+    """
+    # find power of two
+    x = 0
+    while pow(2, x) < n:
+        x = x + 1
+    x = x - 1
+    y = pow(2, x)
+    m = (n - y)
+    return (2 * m) + 1
 
 
 def main():
     """
     Main program
     """
-    # winning_elf = white_elephant_party(5)
-    winning_elf = white_elephant_party(3001330)
-    print(winning_elf.id)
+    import sys
+    if len(sys.argv) > 1:
+        print(josephus_circle(int(sys.argv[1])))
+    else:
+        print("Usage: python joseph_a.py <elf count>")
 
 
 if __name__ == '__main__':
