@@ -12,7 +12,7 @@ def josephus_circle(n):
     the following math to determine "winner":
 
     where j(n) = j(3^x + m) = m if m ≤ 3^x
-                            = 3^x + 2(m - 3^x) if m > 3^x
+                            = 2m - 3^x if m > 3^x
     """
     # find power of three
     x = 0
@@ -24,7 +24,7 @@ def josephus_circle(n):
     if m <= y:
         return m
     else:
-        return y + (2 * (m - y))
+        return (2 * m) - y
 
 
 def main():
