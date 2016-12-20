@@ -17,23 +17,20 @@ def count_allowed(black_ranges):
     if prev_start > 0:
         allowed_ips = prev_start
 
-    print(prev_start, prev_end)
+    max_end = prev_end
 
     for next_start, next_end in black_ranges[1:]:
-        print(next_start, next_end)
-        # If the range is not contiguous to the
-        # previous range, then add allowable ips
-        if next_start > prev_end + 1:
-            # print(prev_end, next_start, next_start - prev_end - 1)
-            allowed_ips = allowed_ips + next_start - prev_end - 1
+        gap = next_start - max_end - 1
+        if gap > 0:
+            allowed_ips = allowed_ips + gap
         prev_start, prev_end = next_start, next_end
+        if prev_end > max_end:
+            max_end = prev_end
 
     # Add any remaining ips allowed up up to max ip
-    # max_ip = 4294967295
-    max_ip = 10
-    if prev_end < max_ip:
-        # print(prev_end, max_ip, max_ip - prev_end - 1)
-        allowed_ips = allowed_ips + max_ip - prev_end - 1
+    max_ip = 4294967295
+    if max_end < max_ip:
+        allowed_ips = allowed_ips + max_ip - max_end - 1
 
     return allowed_ips
 
