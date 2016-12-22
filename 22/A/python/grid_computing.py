@@ -8,51 +8,31 @@ USED = 0
 AVAIL = 1
 
 
-def get_neighbors(row_index, col_index, grid):
+def count_viable_pairs(data):
     """
-    Returns a list of neighbors for the given position.
-    """
-    neighbors = []
-    # up
-    if row_index > 0:
-        neighbors.append(grid[row_index - 1][col_index])
-    # down
-    if row_index < len(grid) - 1:
-        neighbors.append(grid[row_index + 1][col_index])
-    # left
-    if col_index > 0:
-        neighbors.append(grid[row_index][col_index - 1])
-    # right
-    if col_index < len(grid[0]) - 1:
-        neighbors.append(grid[row_index][col_index + 1])
-
-    return neighbors
-
-
-def count_viable_pairs(grid):
-    """
-    Returns a count of the viable pairs in the grid.
+    Returns a count of the viable pairs in the data.
     """
     count = 0
-    for row_index, row in enumerate(grid):
-        for col_index, storage_data in enumerate(row):
-            if storage_data[USED] > 0:
-                for neighbor in get_neighbors(row_index, col_index, grid):
-                    if storage_data[USED] <= neighbor[AVAIL]:
+    for this_index, this_node in enumerate(data):
+        if this_node[USED] > 0:
+            for that_index, that_node in enumerate(data):
+                if this_node[USED] <= that_node[AVAIL]:
+                    if this_index != that_index:
                         count += 1
-
     return count
 
 
-def read_data(iterable):
+def read_nodes(iterable):
     """
-    Reads data from iterable and returns
-    a grid.
+    Reads node data from iterable and
+    returns a list of tuples where
+    the first entry is the used and the
+    second is the available.
     """
     offset = len('/dev/grid/')
     maxx = 0
     maxy = 0
-    data = []
+    nodes = []
     for line in iterable:
         tokens = line.strip().split()
         if line.startswith('/dev/grid/'):
@@ -65,29 +45,17 @@ def read_data(iterable):
                 maxy = ypos
             used = int(tokens[2][:-1])
             avail = int(tokens[3][:-1])
-            data.append((xpos, ypos, used, avail))
-
-    # now take data in list form and put it into
-    # a grid instead
-    grid = []
-    for _ in range(maxy + 1):
-        grid.append([0] * (maxx + 1))
-
-    for datum in data:
-        grid[datum[1]][datum[0]] = (datum[2], datum[3])
-
-    return grid
+            nodes.append((used, avail))
+    return nodes
 
 
 def main():
     """
     Main program.
     """
-    # read data into a list and get
-    # the maximum x and y
     import sys
-    grid = read_data(sys.stdin)
-    print(count_viable_pairs(grid))
+    nodes = read_nodes(sys.stdin)
+    print(count_viable_pairs(nodes))
 
 if __name__ == '__main__':
     main()
