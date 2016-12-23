@@ -21,9 +21,9 @@ def grid_to_string(grid):
         for col in range(grid.width):
             index = row_col_to_index(row, col, grid)
             if index == grid.target:
-                grid_string = grid_string + "*"
+                grid_string = grid_string + "XX"
             grid_string = grid_string + \
-                str((grid.data[index].used, grid.data[index].avail))
+                str((grid.data[index].used, grid.data[index].avail)) + " "
         grid_string = grid_string + "\n"
     return grid_string
 
@@ -50,7 +50,7 @@ def read_grid(iterable):
             if int(tokens[2][:-1]) == 0:
                 empty = len(data) - 1
 
-    return Grid(tuple(data), height, width, empty, len(data) - width)
+    return Grid(tuple(data), height, width, empty, len(data) - height)
 
 
 def row_col_to_index(row, col, grid):
@@ -142,9 +142,8 @@ def grid_priority(grid):
     """
     target_row, target_col = index_to_row_col(grid.target, grid)
     empty_row, empty_col = index_to_row_col(grid.empty, grid)
-    priority = (100 * (target_row + target_col)) + \
-        abs(target_row - empty_row) + \
-        abs(target_col - empty_col)
+    priority = abs(target_row - empty_row) + \
+        abs(target_col - empty_col - 1)
     return priority
 
 
@@ -166,7 +165,7 @@ def shortest_path(grid):
     while queue:
         item = heapq.heappop(queue)
         grid = item.grid
-        if grid.target == 0:
+        if grid.empty == (grid.target - grid.height):
             return item.steps
 
         for neighbor_index in get_neighbors(grid.empty, grid):
@@ -187,8 +186,10 @@ def main():
     """
     import sys
     grid = read_grid(sys.stdin)
+    print(index_to_row_col(grid.target, grid), grid.data[grid.target])
+    print()
     print(grid_to_string(grid))
-    # print(shortest_path(grid))
+    #  print(shortest_path(grid))
 
 
 if __name__ == '__main__':
