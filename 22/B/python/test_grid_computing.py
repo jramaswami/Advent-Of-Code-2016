@@ -16,58 +16,42 @@ class TestGridComputing(unittest.TestCase):
         Tests for read_grid()
         """
         with open('../../test0.txt') as in_fh:
-            expected = [[(68, 24), (65, 23), (71, 21)],
-                        [(73, 14), (69, 25), (69, 22)],
-                        [(64, 25), (70, 15), (70, 20)]]
-            grid = gc.Grid()
-            grid.read_data(in_fh)
-            for row_index, row in enumerate(expected):
-                for col_index, val in enumerate(row):
-                    cell = grid.get_cell(row_index, col_index)
-                    msg = str(cell) + " should be " + \
-                        str((row_index, col_index)) + " " + str(val)
-                    self.assertEqual(cell.used, val[0], msg)
-                    self.assertEqual(cell.avail, val[1], msg)
+            grid = gc.read_grid(in_fh)
+            expected_data = (gc.Node(68, 24), gc.Node(73, 14), gc.Node(64, 25),
+                             gc.Node(65, 23), gc.Node(69, 25), gc.Node(70, 15),
+                             gc.Node(71, 21), gc.Node(69, 22), gc.Node(70, 20))
+            self.assertEqual(grid.data, expected_data)
+            self.assertEqual(grid.width, 3)
+            self.assertEqual(grid.height, 3)
 
-        with open('../../test2.txt') as in_fh:
-            expected = [[(8, 2), (7, 2), (6, 4)],
-                        [(6, 5), (0, 8), (8, 1)],
-                        [(28, 4), (7, 4), (6, 3)]]
-            grid = gc.Grid()
-            grid.read_data(in_fh)
-            for row_index, row in enumerate(expected):
-                for col_index, val in enumerate(row):
-                    cell = grid.get_cell(row_index, col_index)
-                    msg = str(cell) + " should be " + \
-                        str((row_index, col_index)) + " " + str(val)
-                    self.assertEqual(cell.used, val[0], msg)
-                    self.assertEqual(cell.avail, val[1], msg)
-            self.assertEqual(grid.empty_node.row, 1)
-            self.assertEqual(grid.empty_node.col, 1)
-
-    def test_get_neighbors(self):
+    def test_row_col_to_index(self):
         """
-        Tests for get_neighbors()
+        Tests for row_col_to_index
         """
         with open('../../test0.txt') as in_fh:
-            grid = gc.Grid()
-            grid.read_data(in_fh)
-            # 0, 0
-            self.assertEqual(grid.get_neighbors(0, 0),
-                             [gc.Cell(1, 0, 73, 14),
-                              gc.Cell(0, 1, 65, 23)])
-            # 1, 1
-            self.assertEqual(grid.get_neighbors(1, 1),
-                             [gc.Cell(0, 1, 65, 23),
-                              gc.Cell(2, 1, 70, 15),
-                              gc.Cell(1, 0, 73, 14),
-                              gc.Cell(1, 2, 69, 22)])
-            # 1, 0
-            self.assertEqual(grid.get_neighbors(1, 0),
-                             [gc.Cell(0, 0, 68, 24),
-                              gc.Cell(2, 0, 64, 25),
-                              gc.Cell(1, 1, 69, 25)])
+            grid = gc.read_grid(in_fh)
+            index = gc.row_col_to_index(1, 1, grid)
+            self.assertEqual(index, 4)
+            self.assertEqual(grid.data[index], gc.Node(69, 25))
 
+    def test_index_to_row_col(self):
+        """
+        Tests for row_col_to_index
+        """
+        with open('../../test0.txt') as in_fh:
+            grid = gc.read_grid(in_fh)
+            row, col = gc.index_to_row_col(4, grid)
+            self.assertEqual(row, 1)
+            self.assertEqual(col, 1)
+
+    def test_shortest_path(self):
+        """
+        Tests for shortest_path
+        """
+        with open('../../test2.txt') as in_fh:
+            grid = gc.read_grid(in_fh)
+            result = gc.shortest_path(grid)
+            self.assertEqual(result, 7)
 
 if __name__ == '__main__':
     unittest.main()
