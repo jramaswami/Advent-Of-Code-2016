@@ -4,16 +4,14 @@ Day 24, Part A
 Air Duct Spelunking
 """
 
-
+import math
+from itertools import permutations
 from collections import namedtuple, deque
-import heapq
 
 Pos = namedtuple('Pos', ['row', 'col'])
-Path = namedtuple('Path', ['position', 'steps', 'visited', 'path', 'nums'])
-QueueItem = namedtuple('QueueItem', ['remaining', 'steps', 'path'])
 
 
-def get_map_details(air_duct_map):
+def get_target_positions(air_duct_map):
     """
     Returns a tuple for the position
     of the starting point, 0; and
@@ -22,15 +20,12 @@ def get_map_details(air_duct_map):
     key and the value as False, since
     the number has not been found yet.
     """
-    start = None
     nums = {}
     for row_index, row in enumerate(air_duct_map):
         for col_index, val in enumerate(row):
-            if val == '0':
-                start = Pos(row_index, col_index)
-            if val not in ['#', '.', '0']:
+            if val not in ['#', '.']:
                 nums[val] = Pos(row_index, col_index)
-    return start, nums
+    return nums
 
 
 def read_map(iterable):
@@ -99,46 +94,17 @@ def get_distances(air_duct_map, start, targets):
                 queue.append((steps + 1, neighbor))
 
 
-def a_star(air_duct_map, start, nums):
+def compute_total_distance(path, distances):
     """
-    Returns the length of the shortest path
-    to finding every number on the air duct
-    map.
+    Returns the total distance of the given
+    path.
     """
-    queue = []
-    start_path = Path(start, 0, (start, ), (start, ), list(nums))
-    heapq.heappush(queue, (len(nums), 0, start_path))
-
-    to_find = len(nums)
-    prev_steps = 0
-
-    while queue:
-        item = heapq.heappop(queue)
-        current = item[2]
-        # print('$', current.position, current.nums, current.steps, current.path)
-        if current.nums == []:
-            for pos in current.path:
-                print(str((pos.row, pos.col)), end=" ")
-            print()
-            return current.steps
-
-        for neighbor in get_neighbors(current.position, air_duct_map):
-            if neighbor not in current.visited:
-                val = air_duct_map[neighbor.row][neighbor.col]
-                if val not in ['0', '.', '#'] and val in current.nums:
-                    next_visited = (neighbor, )
-                    index = current.nums.index(val)
-                    next_nums = current.nums[:index] + current.nums[index + 1:]
-                    # print('# Found', val, 'at', neighbor, next_nums, len(current.path))
-                    assert val not in next_nums
-                else:
-                    next_visited = current.visited + (neighbor, )
-                    next_nums = current.nums
-                next_path = current.path + (neighbor, )
-                next_steps = current.steps + 1
-                heapq.heappush(queue, (next_steps, len(next_nums),
-                                       Path(neighbor, next_steps, next_visited,
-                                            next_path, next_nums)))
+    prev = '0'
+    total_distance = 0
+    for current in path:
+        total_distance += distances[prev][current]
+        prev = current
+    return total_distance
 
 
 def main():
@@ -147,20 +113,26 @@ def main():
     """
     import sys
     air_duct_map = read_map(sys.stdin)
-    # print(air_duct_map)
-    start, nums = get_map_details(air_duct_map)
-    # print(start, nums)
-    # print(a_star(air_duct_map, start, nums))
-
-    targets = list(nums.keys())
-    targets.append('0')
-    dists = {}
+    target_positions = get_target_positions(air_duct_map)
+    targets = list(target_positions.keys())
+    distances = {}
     for target in targets:
         targets0 = list(targets)
         targets0.remove(target)
-        dists[target] = get_distances(air_duct_map, nums[target], list(targets0))
-    print(dists)
+        distances[target] = get_distances(air_duct_map,
+                                          target_positions[target],
+                                          targets0)
 
+    targets.remove('0')
+    shortest_path = None
+    shortest_distance = math.inf
+    for path in permutations(targets):
+        total_distance = compute_total_distance(path, distances)
+        if total_distance < shortest_distance:
+            shortest_path = path
+            shortest_distance = total_distance
+    print(shortest_path)
+    print(shortest_distance)
 
 if __name__ == '__main__':
     main()

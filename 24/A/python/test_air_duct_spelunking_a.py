@@ -24,16 +24,6 @@ class TestAirDuctSpelunkingA(unittest.TestCase):
                         '###########']
             self.assertEqual(adm, expected)
 
-    def test_get_map_details(self):
-        """
-        Tests for get_map_details()
-        """
-        with open('../../test1.txt') as in_fh:
-            adm = ads.read_map(in_fh)
-            start, nums = ads.get_map_details(adm)
-            self.assertEqual(start, ads.Pos(1, 1))
-            self.assertEqual(nums, ['1', '2', '3', '4'])
-
     def test_get_neighbors(self):
         """
         Tests for get_neigbhors()
