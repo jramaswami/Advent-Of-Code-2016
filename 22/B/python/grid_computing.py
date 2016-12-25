@@ -5,26 +5,22 @@ Grid Computing
 """
 
 import heapq
-from collections import namedtuple
+from collections import namedtuple, defaultdict
 
 Node = namedtuple('Node', ['used', 'avail'])
 Grid = namedtuple('Grid', ['data', 'height', 'width', 'empty', 'target'])
 QueueItem = namedtuple('QueueItem', ['priority', 'steps', 'grid'])
 
+SIZE = 0
+USED = 1
 
 def grid_to_string(grid):
     """
     Returns grid string
     """
     grid_string = ""
-    for row in range(grid.height):
-        for col in range(grid.width):
-            index = row_col_to_index(row, col, grid)
-            if index == grid.target:
-                grid_string = grid_string + "XX"
-            grid_string = grid_string + \
-                str((grid.data[index].used, grid.data[index].avail)) + " "
-        grid_string = grid_string + "\n"
+    for row in grid:
+        grid_string += " ".join([str(n) for n in row]).strip() + "\n"
     return grid_string
 
 
@@ -32,7 +28,7 @@ def read_grid(iterable):
     """
     Returns Grid read from the iterable
     """
-    data = []
+    rows = defaultdict(list)
     offset = len('/dev/grid')
     height = width = 0
     empty = None
@@ -46,138 +42,81 @@ def read_grid(iterable):
             row = int(name_tokens[2][1:])
             if row + 1 > height:
                 height = row + 1
-            data.append(Node(int(tokens[2][:-1]), int(tokens[3][:-1])))
-            if int(tokens[2][:-1]) == 0:
-                empty = len(data) - 1
 
-    return Grid(tuple(data), height, width, empty, len(data) - height)
+            node = [int(tokens[1][:-1]), int(tokens[2][:-1])]
+            rows[row].append(node)
+
+    grid = []
+    for row in range(height):
+        grid.append(rows[row])
+    return grid
 
 
-def row_col_to_index(row, col, grid):
+def get_neighbors(row, col, grid):
     """
-    Returns the index of the row, col
-    coordinates in the grid.
-
-    Grid is rotated so that cols are actually
-    rows, based on the format of the input
-    data.
-    """
-    return row * grid.height + col
-
-
-def index_to_row_col(index, grid):
-    """
-    Returns the the row, col coordinates
-    in the grid of the given index.
-
-    Grid is rotated so that cols are actually
-    rows, based on the format of the input
-    data.
-    """
-    return (index // grid.height, index % grid.height)
-
-
-def get_neighbors(index, grid):
-    """
-    Returns a list of the indices of the
-    neighbors of the node at the given
-    row, col
+    Returns list of tuples (row, col)
+    that are neighbors of the given
+    cell.
     """
     neighbors = []
-    row, col = index_to_row_col(index, grid)
-    if row > 0:
-        up_index = row_col_to_index(row - 1, col, grid)
-        assert up_index >= 0
-        assert up_index < len(grid.data)
-        neighbors.append(up_index)
-    if row < grid.height - 1:
-        down_index = row_col_to_index(row + 1, col, grid)
-        assert down_index >= 0
-        assert down_index < len(grid.data)
-        neighbors.append(down_index)
-    if col > 0:
-        left_index = row_col_to_index(row, col - 1, grid)
-        assert left_index >= 0
-        assert left_index < len(grid.data)
-        neighbors.append(left_index)
-    if col < grid.width - 1:
-        right_index = row_col_to_index(row, col + 1, grid)
-        assert right_index >= 0
-        if right_index >= len(grid.data):
-            print('$$', right_index, row, col + 1, grid.width)
-        assert right_index < len(grid.data)
-        neighbors.append(right_index)
+
+    if row >= 0:
+        neighbors.append((row - 1, col))
+
+    if row < len(grid) - 1:
+        neighbors.append((row + 1, col))
+
+    if col >= 0:
+        neighbors.append((row, col - 1))
+
+    if col < len(grid[0]) - 1:
+        neighbors.append((row, col + 1))
+
     return neighbors
 
 
-def move_empty_node(empty_index, neighbor_index, grid):
+def a_star(grid):
     """
-    Returns a new Grid with the empty moved.
+    A star to find shortest path to the
+    postion right beside our target
+
+    Returns list that is the path.
     """
-    neighbor_node = grid.data[neighbor_index]
-    empty_node = grid.data[grid.empty]
-    new_neighbor_node = Node(0,
-                             neighbor_node.used + neighbor_node.avail)
-    new_empty_node = Node(neighbor_node.used,
-                          empty_node.avail - neighbor_node.used)
-    new_data = list(grid.data)
-    new_data = new_data[:neighbor_index] + [new_neighbor_node] + \
-        new_data[neighbor_index + 1:]
-    new_data = new_data[:grid.empty] + [new_empty_node] + \
-        new_data[grid.empty + 1:]
+    # find where we start
+    current = None
+    for row_index, row in enumerate(grid):
+        for col_index, node in enumerate(row):
+            if node[USED] == 0:
+                current = (row_index, col_index)
+        if current:
+            break
 
-    if neighbor_index == grid.target:
-        new_target = grid.empty
-    else:
-        new_target = grid.target
-
-    new_grid = Grid(tuple(new_data), grid.height, grid.width,
-                    neighbor_index, new_target)
-    return new_grid
-
-
-def grid_priority(grid):
-    """
-    Returns grid priority
-    """
-    target_row, target_col = index_to_row_col(grid.target, grid)
-    empty_row, empty_col = index_to_row_col(grid.empty, grid)
-    priority = abs(target_row - empty_row) + \
-        abs(target_col - empty_col - 1)
-    return priority
-
-
-def shortest_path(grid):
-    """
-    Returns the length of the shortest path
-    """
     queue = []
-    marked = {}
-    # init queue
-    marked[grid] = True
-    for neighbor_index in get_neighbors(grid.empty, grid):
-        if grid.data[neighbor_index].used <= grid.data[grid.empty].avail:
-            new_grid = move_empty_node(grid.empty, neighbor_index, grid)
-            queue_item = QueueItem(grid_priority(new_grid), 1, new_grid)
-            heapq.heappush(queue, queue_item)
-            marked[new_grid] = True
-
+    visited = {}
+    heapq.heappush(queue, (0, current, []))
+    path = []
+    goal = (0, len(grid[0]) - 2)
     while queue:
-        item = heapq.heappop(queue)
-        grid = item.grid
-        if grid.empty == (grid.target - grid.height):
-            return item.steps
+        _, current, path = heapq.heappop(queue)
+        if current == goal:
+            return len(path) + 1 + (5 * goal[1])
 
-        for neighbor_index in get_neighbors(grid.empty, grid):
-            if neighbor_index >= len(grid.data):
-                print(neighbor_index)
-            if grid.data[neighbor_index].used <= grid.data[grid.empty].avail:
-                new_grid = move_empty_node(grid.empty, neighbor_index, grid)
-                if new_grid not in marked:
-                    priority = grid_priority(new_grid)
-                    queue_item = QueueItem(priority, item.steps + 1, new_grid)
-                    heapq.heappush(queue, queue_item)
-                    marked[new_grid] = True
+        visited[current] = True
+        for neighbor in get_neighbors(current[0], current[1], grid):
+            if neighbor in visited:
+                continue
+
+            neighbor_used = grid[neighbor[0]][neighbor[1]][USED]
+            current_size = grid[current[0]][current[1]][SIZE]
+            if neighbor_used > current_size:
+                continue
+
+            # c_dist = abs(current[0] - goal[0]) + abs(current[1] - goal[1])
+            n_dist = abs(neighbor[0] - goal[0]) + abs(neighbor[1] - goal[1])
+            new_path = list(path)
+            new_path.append(neighbor)
+            heapq.heappush(queue, (n_dist, neighbor, new_path))
+            visited[neighbor] = True
 
 
 def main():
@@ -186,10 +125,7 @@ def main():
     """
     import sys
     grid = read_grid(sys.stdin)
-    print(index_to_row_col(grid.target, grid), grid.data[grid.target])
-    print()
-    print(grid_to_string(grid))
-    #  print(shortest_path(grid))
+    print(a_star(grid))
 
 
 if __name__ == '__main__':
