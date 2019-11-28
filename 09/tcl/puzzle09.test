@@ -4,17 +4,14 @@ package require tcltest
 namespace import tcltest::*
 source puzzle09.tcl
 
-puts "Testing part 1 ..."
-test test-1 {first sample test} {decompress {ADVENT} } [string length ADVENT]
-test test-2 {second sample test} {decompress {A(1x5)BC} } [string length ABBBBBC]
-test test-3 {second sample test} {decompress {(3x3)XYZ} } [string length XYZXYZXYZ]
-test test-4 {third sample test} {decompress {A(2x2)BCD(2x2)EFG} } [string length ABCBCDEFEFG]
-test test-4 {fourth sample test} {decompress {(6x1)(1x3)A} } [string length {(1x3)A}]
-test test-5 {fifth sample test} {decompress {X(8x2)(3x3)ABCY} } [string length {X(3x3)ABC(3x3)ABCY}]
+test test-1 {first sample test} {solve {ADVENT} } [string length ADVENT]
+test test-2 {second sample test} {solve {A(1x5)BC} } [string length ABBBBBC]
+test test-3 {second sample test} {solve {(3x3)XYZ} } [string length XYZXYZXYZ]
+test test-4 {third sample test} {solve {A(2x2)BCD(2x2)EFG} } [string length ABCBCDEFEFG]
+test test-4 {fourth sample test} {solve {(6x1)(1x3)A} } [string length {(1x3)A}]
+test test-5 {fifth sample test} {solve {X(8x2)(3x3)ABCY} } [string length {X(3x3)ABC(3x3)ABCY}]
 
-puts "Testing part 2 ..."
-test test-6 {first recursive test} {decompress {(3x3)XYZ} 1} [string length XYZXYZXYZ]
-test test-7 {second recursive test} {decompress {X(8x2)(3x3)ABCY} 1} [string length XABCABCABCABCABCABCY]
-test test-8 {third recursive test} {string length [decompress {(27x12)(20x12)(13x14)(7x10)(1x12)A} 1]} 241920
-test test-9 {fourth recursive test} {string length [decompress {(25x3)(3x3)ABC(2x3)XY(5x2)PQRSTX(18x9)(3x2)TWO(5x7)SEVEN} 1]} 445
-puts "Done!"
+test test-6 {first recursive test} {solve {(3x3)XYZ} 1} [string length XYZXYZXYZ]
+test test-7 {second recursive test} {solve {X(8x2)(3x3)ABCY} 1} [string length XABCABCABCABCABCABCY]
+test test-8 {third recursive test} {solve {(27x12)(20x12)(13x14)(7x10)(1x12)A} 1} 241920
+test test-9 {fourth recursive test} {solve {(25x3)(3x3)ABC(2x3)XY(5x2)PQRSTX(18x9)(3x2)TWO(5x7)SEVEN} 1} 445
